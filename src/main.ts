@@ -10,7 +10,7 @@ async function bootstrap() {
   
   // CORS
   app.enableCors({
-    origin: configService.get<string>('APP_URL'),
+    origin: configService.get<string>('CORS_ALLOW_ORIGIN'),
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: 'same-origin',
@@ -26,13 +26,13 @@ async function bootstrap() {
     .build();
   
   const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('api/docs', app, document);
 
   const PORT = configService.getOrThrow<number>('PORT');
   await app.listen(PORT, () => {
     console.log(`\n Server is running on port http://localhost:${PORT}`);
   });
 
-  console.log(`\n Swagger API documentation is available at http://localhost:${PORT}/api`);
+  console.log(`\n Swagger API documentation is available at http://localhost:${PORT}/api/docs`);
 }
 await bootstrap();
