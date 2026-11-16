@@ -2,29 +2,40 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module.js';
 import { ConfigService } from '@nestjs/config';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
+import { ValidationPipe } from '@nestjs/common';
 
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
-  
+  app.use(cookieParser());
+
   // CORS
   app.enableCors({
     origin: configService.get<string>('CORS_ALLOW_ORIGIN'),
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: 'same-origin',
+    credentials: true,
   });
-  
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    })
+  )
+
   app.setGlobalPrefix('api/v1');
-  
+
   const swaggerConfig = new DocumentBuilder()
     .setTitle('URL Shortener API')
     .setDescription('API documentation for the URL Shortener service')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
-  
+
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document);
 
