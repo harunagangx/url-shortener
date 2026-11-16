@@ -8,7 +8,8 @@ import {
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '@/users/entities/users.entity.js';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { ConfigService } from '@nestjs/config';
 import { SignInDto } from './dto/sign-in.dto.js';
 import { SignUpDto } from './dto/sign-up.dto.js';
 
@@ -21,6 +22,7 @@ export class AuthService {
     private readonly userRepository: Repository<User>,
     @Inject('SUPABASE_CLIENT')
     private readonly supabase: SupabaseClient,
+    private readonly configService: ConfigService,
   ) {}
 
   async signIn(signInDto: SignInDto) {
@@ -81,6 +83,46 @@ export class AuthService {
     } catch (error) {
       this.logger.error(
         'Sign-up failed',
+        error instanceof Error ? error.stack : String(error),
+      );
+      throw error;
+    }
+  }
+
+  async signOut(refreshToken: string) {
+    try {
+      if (!refreshToken) {
+        throw new UnauthorizedException('Refresh token is required');
+      }
+
+      // Use a per-request client so one user's session cannot overwrite another's.
+      const sessionClient = createClient(
+        this.configService.getOrThrow<string>('SUPABASE_URL'),
+        this.configService.getOrThrow<string>('SUPBASE_PUBLISH_KEY'),
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+            detectSessionInUrl: false,
+          },
+        },
+      );
+
+      const { data, error: refreshError } =
+        await sessionClient.auth.refreshSession({ refresh_token: refreshToken });
+
+      if (refreshError || !data.session) {
+        throw new UnauthorizedException('Invalid or expired refresh token');
+      }
+
+      const { error } = await sessionClient.auth.signOut({ scope: 'local' });
+      if (error) {
+        throw new BadRequestException(error.message);
+      }
+      return { success: true };
+    } catch (error) {
+      this.logger.error(
+        'Sign-out failed',
         error instanceof Error ? error.stack : String(error),
       );
       throw error;
