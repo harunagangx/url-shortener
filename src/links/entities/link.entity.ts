@@ -29,9 +29,6 @@ export class Link {
   @JoinColumn({ name: 'user_id', referencedColumnName: 'id' })
   user: User | null;
 
-  @Column({ type: 'boolean', name: 'is_custom', default: false })
-  isCustom: boolean;
-
   @Column({ type: 'boolean', name: 'is_active', default: true })
   isActive: boolean;
 
