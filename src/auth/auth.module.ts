@@ -28,5 +28,6 @@ import { createClient } from '@supabase/supabase-js';
     },
     AuthService,
   ],
+  exports: ['SUPABASE_CLIENT'],
 })
 export class AuthModule {}

@@ -8,6 +8,7 @@ import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.getHttpAdapter().getInstance().set('query parser', 'extended');
   const configService = app.get(ConfigService);
   app.use(cookieParser());
 
