@@ -1,10 +1,36 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { UsersModule } from './users/users.module.js';
+import { LinksModule } from './links/links.module.js';
+import { AuthModule } from './auth/auth.module.js';
+import { RedirectModule } from './redirect/redirect.module.js';
 
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const url = configService.get<string>('DATABASE_URL');
+        if (!url) {
+          throw new Error('DATABASE_URL environment variable is required');
+        }
+
+        return {
+          type: 'postgres' as const,
+          url,
+          autoLoadEntities: true,
+          synchronize: false,
+        };
+      },
+    }),
+    UsersModule,
+    LinksModule,
+    AuthModule,
+    RedirectModule,
+  ],
 })
 export class AppModule {}
